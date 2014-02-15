@@ -78,6 +78,7 @@ class Game(width: Int, height: Int, difficulty: Game.Level) {
 
   def start() {
     logger.debug("Starting")
+    terminal.enterPrivateMode()
     state = State.init(terminal)
     isOver.compareAndSet(true, false)
     futures(0) = executor.submit(playerLoop)
@@ -114,6 +115,7 @@ class Game(width: Int, height: Int, difficulty: Game.Level) {
       executor.shutdown()
       terminal.clearScreen()
       terminal.flush()
+      terminal.exitPrivateMode()
     } else {
       logger.debug("Already shutdown")
     }
