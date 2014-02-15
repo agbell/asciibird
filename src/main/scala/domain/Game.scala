@@ -90,7 +90,7 @@ class Game(width: Int, height: Int, difficulty: Game.Level) {
       logger.debug("Stopping")
       isOver.set(true)
       futures.foreach(_.cancel(true))
-      val message = "Game Over\nPress `n` for a new game\nPress `q` to quit"
+      val message = s"Game Over\nScore: ${state.score}\nPress `n` for a new game\nPress `q` to quit"
       prompt(message)
       futures(2) = executor.submit(promptLoop)
     } else {

@@ -4,11 +4,11 @@ import scala.util.Random
 import com.googlecode.lanterna.input.Key
 import com.googlecode.lanterna.terminal.Terminal
 
-// todo add score
 case class State private(
     terminal: Terminal,
     origin: (Int, Int),
     player: Player,
+    score: Long,
     platform: CharBuffer,
     obstacle: CharBuffer,
     obstacleDelay: Int) {
@@ -39,9 +39,10 @@ case class State private(
     }
   }
 
+  // todo adjust score increment depending on game difficulty level
   def updatePlayer(): State = {
     terminal.synchronized {
-      copy(player = terminal.readInput() match {
+      copy(score = score + 1L, player = terminal.readInput() match {
         case null => player
         case key  => key.getKind match {
           case Key.Kind.ArrowUp     => player.moveUp()
@@ -76,6 +77,9 @@ case class State private(
 
   def renderPlayer() {
     renderToken(player.x, player.y, player.token)
+    terminal.moveCursor(originX, originY + Game.Height + Game.Border)
+    s"Score: $score".foreach(terminal.putCharacter)
+    terminal.moveCursor(0, 0)
   }
 
   def hidePlayer() {
@@ -100,8 +104,9 @@ object State {
     val originY = math.floor(screenSize.getRows / 2).toInt - math.floor(Game.Height / 2).toInt
     val origin = (originX, originY)
     val player = Player(originX + 5, originY + 5)
+    val score = 0L
     val platform = CharBuffer.empty(width = Game.Width, height = Game.Height)
     val obstacle = Obstacle.random.buffer
-    State(terminal, origin, player, platform, obstacle, obstacleDelay = 0)
+    State(terminal, origin, player, score, platform, obstacle, obstacleDelay = 0)
   }
 }
