@@ -1,0 +1,13 @@
+<configuration>
+  <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+    <file>asciibird.log</file>
+    <append>true</append>
+    <encoder>
+      <pattern>%4p - [%d{ISO8601}] [%thread] %c{1}: %m%n%ex{full}</pattern>
+    </encoder>
+  </appender>
+
+  <root level="DEBUG">
+    <appender-ref ref="FILE"/>
+  </root>
+</configuration>
