@@ -18,6 +18,8 @@ class Game(width: Int, height: Int, difficulty: Game.Level) {
 
   private val terminal = new UnixTerminal(System.in, System.out, Charset.forName("UTF8"), JLineTerminalSizeQuerier)
 
+  terminal.enterPrivateMode()
+
   private var state: State = _
 
   private val isOver = new AtomicBoolean(false)
@@ -78,8 +80,10 @@ class Game(width: Int, height: Int, difficulty: Game.Level) {
 
   def start() {
     logger.debug("Starting")
-    terminal.enterPrivateMode()
-    state = State.init(terminal)
+    terminal.synchronized {
+      terminal.clearScreen()
+      state = State.init(terminal, width, height, originX, originY)
+    }
     isOver.compareAndSet(true, false)
     futures(0) = executor.submit(playerLoop)
     futures(1) = executor.submit(platformLoop)
