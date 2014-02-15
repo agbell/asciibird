@@ -12,7 +12,7 @@ class Game(width: Int, height: Int, difficulty: Game.Level) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  private val executor = Executors.newFixedThreadPool(2)
+  private val executor = Executors.newFixedThreadPool(3)
 
   private val futures = new Array[Future[_]](2)
 
