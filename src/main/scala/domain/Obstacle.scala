@@ -2,7 +2,9 @@ package domain
 
 import scala.util.Random
 
-class Obstacle(width: Int, height: Int) {
+case class Obstacle(height: Int) {
+
+  val width = 4
 
   val gapHeight = Random.nextInt(3) + 2
 
@@ -20,13 +22,4 @@ class Obstacle(width: Int, height: Int) {
       }).toArray
     }).toArray
   }
-}
-
-object Obstacle {
-
-  val Width = 4
-
-  val Height = Game.Height
-
-  def random = new Obstacle(Width, Height)
 }

@@ -20,6 +20,13 @@ class Game(width: Int, height: Int, difficulty: Game.Level) {
 
   terminal.enterPrivateMode()
 
+  private val (originX, originY) = {
+    val screenSize = terminal.getTerminalSize
+    val originX = math.floor(screenSize.getColumns / 2).toInt
+    val originY = math.floor(screenSize.getRows / 2).toInt
+    (originX, originY)
+  }
+
   private var state: State = _
 
   private val isOver = new AtomicBoolean(false)
@@ -31,6 +38,7 @@ class Game(width: Int, height: Int, difficulty: Game.Level) {
       state.synchronized {
         state.hidePlayer()
         state = state.updatePlayer
+        state = state.updateScore(difficulty)
         if (!state.isValid) stop()
       }
     }
@@ -38,11 +46,12 @@ class Game(width: Int, height: Int, difficulty: Game.Level) {
     def render() {
       state.synchronized {
         state.renderPlayer()
+        state.renderScore()
       }
     }
   }
 
-  private val platformLoop = new EventLoop(fps = 2) {
+  private val platformLoop = new EventLoop(fps = difficulty.value) {
     def update() {
       state.synchronized {
         state = state.updatePlatform
@@ -60,17 +69,19 @@ class Game(width: Int, height: Int, difficulty: Game.Level) {
 
   private def promptLoop = new EventLoop(fps = 24) {
     def update() {
-      val key = terminal.readInput()
-      if (key != null && key.getKind == Key.Kind.NormalKey)
-        key.getCharacter match {
-          case 'n' =>
-            restart()
-            break
-          case 'q' =>
-            shutdown()
-            break
-          case  _  =>
-        }
+      terminal.synchronized {
+        val key = terminal.readInput()
+        if (key != null && key.getKind == Key.Kind.NormalKey)
+          key.getCharacter match {
+            case 'n' =>
+              restart()
+              break
+            case 'q' =>
+              shutdown()
+              break
+            case  _  =>
+          }
+      }
     }
 
     def render() {
@@ -91,79 +102,98 @@ class Game(width: Int, height: Int, difficulty: Game.Level) {
 
   def stop() {
     logger.debug("Stop requested")
-    if (isOver.get == false) {
+    if (isOver.get)
+      logger.debug("Already stopped")
+    else {
       logger.debug("Stopping")
       isOver.set(true)
       futures.foreach(_.cancel(true))
-      val message = s"Game Over\nScore: ${state.score}\nPress `n` for a new game\nPress `q` to quit"
+      val message = state.synchronized {
+        s"Game Over\nScore: ${state.score}\nPress `n` for a new game\nPress `q` to quit"
+      }
       prompt(message)
       futures(2) = executor.submit(promptLoop)
-    } else {
-      logger.debug("Already stopped")
     }
   }
 
   def restart() {
     logger.debug("Restart requested")
     futures.foreach(_.cancel(true))
-    terminal.clearScreen()
     start()
   }
 
   def shutdown() {
     logger.debug("Shutdown requested")
-    if (isShutdown.get == false) {
+    if (isShutdown.get)
+      logger.debug("Already shutdown")
+    else {
       logger.debug("Shutting down")
       isShutdown.set(true)
       futures.foreach(_.cancel(true))
       executor.shutdown()
-      terminal.clearScreen()
-      terminal.flush()
-      terminal.exitPrivateMode()
-    } else {
-      logger.debug("Already shutdown")
+      terminal.synchronized {
+        terminal.clearScreen()
+        terminal.flush()
+        terminal.exitPrivateMode()
+      }
     }
   }
 
   private def prompt(message: String) = {
     val messages = message.split('\n')
-    val screenSize = terminal.getTerminalSize
-    val x = math.floor(screenSize.getColumns / 2).toInt - (messages.maxBy(_.size).size / 2).toInt
-    var y = math.floor(screenSize.getRows / 2).toInt - (messages.size / 2).toInt
-    terminal.clearScreen()
-    messages.foreach { message =>
-      terminal.moveCursor(x, y)
-      message.foreach(terminal.putCharacter)
-      y += 1
+    val x = originX - (messages.maxBy(_.size).size / 2).toInt
+    var y = originY - (messages.size / 2).toInt
+    terminal.synchronized {
+      terminal.clearScreen()
+      messages.foreach { message =>
+        terminal.moveCursor(x, y)
+        message.foreach(terminal.putCharacter)
+        y += 1
+      }
+      terminal.moveCursor(0, 0)
+      terminal.flush()
     }
-    terminal.moveCursor(0, 0)
-    terminal.flush()
   }
 }
 
 object Game {
 
-  def apply(width: Int = Width, height: Int = Height, difficulty: Level = Levels.Normal): Game = {
-    new Game(width, height, difficulty)
+  def apply(width: Int = MinWidth, height: Int = MinHeight, difficulty: Level = Levels.Normal): Game = {
+    new Game(math.max(width, MinWidth), math.max(height, MinHeight), difficulty)
   }
 
-  val Width = 28
+  val MinWidth = 28
 
-  val Height = 12
+  val MaxWidth = 80
 
-  val Border = 1
+  val MinHeight = 12
 
-  sealed trait Level
+  val MaxHeight = 40
+
+  val BorderSize = 1
+
+  sealed trait Level {
+
+    val value: Int
+  }
 
   object Levels {
 
-    // todo adjust fps to 1
-    case object Easy extends Level
+    def valueOf(i: Int): Level = if (i <= 1) Easy else if (i < 4) Normal else Difficult
 
-    // todo adjust fps to 2
-    case object Normal extends Level
+    case object Easy extends Level {
 
-    // todo adjust fps to 4
-    case object Difficult extends Level
+      val value = 1
+    }
+
+    case object Normal extends Level {
+
+      val value = 2
+    }
+
+    case object Difficult extends Level {
+
+      val value = 4
+    }
   }
 }

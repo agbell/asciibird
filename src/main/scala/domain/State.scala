@@ -6,6 +6,8 @@ import com.googlecode.lanterna.terminal.Terminal
 
 case class State private(
     terminal: Terminal,
+    width: Int,
+    height: Int,
     origin: (Int, Int),
     player: Player,
     score: Long,
@@ -15,34 +17,31 @@ case class State private(
 
   private val (originX, originY) = origin
 
-  private val obstacles = Stream.continually(Obstacle.random.buffer).iterator
+  private val obstacles = Stream.continually(Obstacle(height).buffer).iterator
 
   def isValid: Boolean = {
     def helper(x: Int, y: Int): Boolean = {
       x >= originX &&
       y >= originY &&
-      x < originX + Game.Width &&
-      y < originY + Game.Height &&
+      x < originX + width &&
+      y < originY + height &&
       platform.getChar(x - originX, y - originY) == CharBuffer.EmptyChar
     }
     (0 to player.token.size).map(i => helper(player.x + i, player.y)).reduceLeft(_ && _)
   }
 
   def updatePlatform(): State = {
-    terminal.synchronized {
-      if (obstacleDelay > 0)
-        copy(platform = platform.scrollLeft(), obstacleDelay = obstacleDelay - 1)
-      else if (obstacle.isEmpty)
-        copy(platform = platform.scrollLeft(), obstacle = obstacles.next(), obstacleDelay = Random.nextInt(5) + 1)
-      else
-        copy(platform = platform.scrollLeft(obstacle.getColumn(0)), obstacle = obstacle.dropLeftColumn())
-    }
+    if (obstacleDelay > 0)
+      copy(platform = platform.scrollLeft(), obstacleDelay = obstacleDelay - 1)
+    else if (obstacle.isEmpty)
+      copy(platform = platform.scrollLeft(), obstacle = obstacles.next(), obstacleDelay = Random.nextInt(5) + 1)
+    else
+      copy(platform = platform.scrollLeft(obstacle.getColumn(0)), obstacle = obstacle.dropLeftColumn())
   }
 
-  // todo adjust score increment depending on game difficulty level
   def updatePlayer(): State = {
     terminal.synchronized {
-      copy(score = score + 1L, player = terminal.readInput() match {
+      copy(player = terminal.readInput() match {
         case null => player
         case key  => key.getKind match {
           case Key.Kind.ArrowUp     => player.moveUp()
@@ -55,17 +54,21 @@ case class State private(
     }
   }
 
+  def updateScore(level: Game.Level): State = {
+    copy(score = score + level.value)
+  }
+
   def renderPlatform() {
     def drawBorder(x: Int, y: Int) {
       terminal.moveCursor(x, y)
-      for (col <- 0 until Game.Width) terminal.putCharacter('-')
+      for (col <- 0 until width) terminal.putCharacter('-')
     }
     terminal.synchronized {
-      drawBorder(originX, originY - Game.Border)
-      drawBorder(originX, originY + Game.Height)
+      drawBorder(originX, originY - Game.BorderSize)
+      drawBorder(originX, originY + height)
       for {
-        y <- 0 until Game.Height
-        x <- 0 until Game.Width
+        y <- 0 until height
+        x <- 0 until width
       } {
         terminal.moveCursor(x + originX, y + originY)
         terminal.putCharacter(platform.getChar(x, y))
@@ -77,13 +80,18 @@ case class State private(
 
   def renderPlayer() {
     renderToken(player.x, player.y, player.token)
-    terminal.moveCursor(originX, originY + Game.Height + Game.Border)
-    s"Score: $score".foreach(terminal.putCharacter)
-    terminal.moveCursor(0, 0)
   }
 
   def hidePlayer() {
     renderToken(player.x, player.y, player.token.map(_ => CharBuffer.EmptyChar).mkString)
+  }
+
+  def renderScore() {
+    terminal.synchronized {
+      terminal.moveCursor(originX, originY + height + Game.BorderSize)
+      s"Score: $score".foreach(terminal.putCharacter)
+      terminal.moveCursor(0, 0)
+    }
   }
 
   private def renderToken(x: Int, y: Int, token: String) {
@@ -98,15 +106,14 @@ case class State private(
 
 object State {
 
-  def init(terminal: Terminal): State = {
-    val screenSize = terminal.getTerminalSize
-    val originX = math.floor(screenSize.getColumns / 2).toInt - math.floor(Game.Width / 2).toInt
-    val originY = math.floor(screenSize.getRows / 2).toInt - math.floor(Game.Height / 2).toInt
-    val origin = (originX, originY)
-    val player = Player(originX + 5, originY + 5)
+  def init(terminal: Terminal, width: Int, height: Int, originX: Int, originY: Int): State = {
+    val left = originX - math.floor(width / 2).toInt
+    val top = originY - math.floor(height / 2).toInt
+    val origin = (left, top)
+    val player = Player(left + 5, top + 5)
     val score = 0L
-    val platform = CharBuffer.empty(width = Game.Width, height = Game.Height)
-    val obstacle = Obstacle.random.buffer
-    State(terminal, origin, player, score, platform, obstacle, obstacleDelay = 0)
+    val platform = CharBuffer.empty(width, height)
+    val obstacle = Obstacle(height).buffer
+    State(terminal, width, height, origin, player, score, platform, obstacle, obstacleDelay = 0)
   }
 }
