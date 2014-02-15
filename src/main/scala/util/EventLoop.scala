@@ -19,8 +19,6 @@ abstract class EventLoop(fps: Int) extends Runnable {
 
   def render(): Unit
 
-  def break = throw EventLoop.Break
-
   def run() {
     isRunning = true
     while (isRunning) {
@@ -52,6 +50,8 @@ abstract class EventLoop(fps: Int) extends Runnable {
       }
     }
   }
+
+  protected def break = throw EventLoop.Break
 }
 
 object EventLoop {
