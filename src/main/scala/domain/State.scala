@@ -48,6 +48,13 @@ case class State private(
           case Key.Kind.ArrowDown   => player.moveDown()
           case Key.Kind.ArrowLeft   => player.moveLeft()
           case Key.Kind.ArrowRight  => player.moveRight()
+          case Key.Kind.NormalKey   => key.getCharacter match {
+            case 'w' | 'k'          => player.moveUp()
+            case 's' | 'j'          => player.moveDown()
+            case 'a' | 'h'          => player.moveLeft()
+            case 'd' | 'l'          => player.moveRight()
+            case _                  => player
+          }
           case _                    => player
         }
       })
