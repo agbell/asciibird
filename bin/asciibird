@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+bin() {
+  local src="${BASH_SOURCE[0]}"
+  while [ -h "$src" ]
+  do
+    local link="$(readlink "$src")"
+    local dir="$(cd -P $(dirname "$src") && cd -P $(dirname "$link") && pwd)"
+    src="$dir/$(basename "$link")"
+  done
+  (cd -P "$(dirname "$src")" && pwd)
+}
+
+cd bin
+
+if [ -f asciibird.jar ]
+then
+  java -jar asciibird.jar $@
+else
+  echo "asciibird jar file does not exit"
+  exit 1
+fi
