@@ -107,10 +107,10 @@ case class State private(
 object State {
 
   def init(terminal: Terminal, width: Int, height: Int, originX: Int, originY: Int): State = {
-    val left = originX - math.floor(width / 2).toInt
-    val top = originY - math.floor(height / 2).toInt
+    val left = originX - (width / 2)
+    val top = originY - (height / 2)
     val origin = (left, top)
-    val player = Player(left + 5, top + 5)
+    val player = Player(left + (width / 4), top + (height / 4))
     val score = 0L
     val platform = CharBuffer.empty(width, height)
     val obstacle = Obstacle(height).buffer

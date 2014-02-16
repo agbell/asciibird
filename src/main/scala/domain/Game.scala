@@ -22,8 +22,8 @@ class Game(width: Int, height: Int, difficulty: Game.Level) {
 
   private val (originX, originY) = {
     val screenSize = terminal.getTerminalSize
-    val originX = math.floor(screenSize.getColumns / 2).toInt
-    val originY = math.floor(screenSize.getRows / 2).toInt
+    val originX = screenSize.getColumns / 2
+    val originY = screenSize.getRows / 2
     (originX, originY)
   }
 
