@@ -11,7 +11,7 @@ bin() {
   (cd -P "$(dirname "$src")" && pwd)
 }
 
-cd bin
+cd $(bin)
 
 if [ -f asciibird.jar ]
 then
