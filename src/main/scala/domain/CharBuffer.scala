@@ -4,6 +4,16 @@ abstract class CharBuffer(val width: Int, val height: Int) {
 
   protected def underlying: Array[Array[Char]]
 
+  def putChar(x: Int, y: Int, char: Char): CharBuffer = {
+    /*
+    val copy = underlying.transpose.transpose
+    copy(y)(x) = char
+    CharBuffer(width, height)(copy)
+    */
+    //CharBuffer(width, height)(underlying)
+    this
+  }
+
   def getChar(x: Int, y: Int) = underlying(y)(x)
 
   def getRow(y: Int): Array[Char] = underlying(y)

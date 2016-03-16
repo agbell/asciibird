@@ -3,6 +3,7 @@ package domain
 import scala.util.Random
 import com.googlecode.lanterna.input.Key
 import com.googlecode.lanterna.terminal.Terminal
+import org.slf4j.LoggerFactory
 
 case class State private(
     terminal: Terminal,
@@ -10,10 +11,14 @@ case class State private(
     height: Int,
     origin: (Int, Int),
     player: Player,
+    maxMissiles: Int,
+    activeMissiles: Seq[(Int, Int)],
     score: Long,
     platform: CharBuffer,
     obstacle: CharBuffer,
     obstacleDelay: Int) {
+
+  private val logger = LoggerFactory.getLogger(getClass)
 
   private val (originX, originY) = origin
 
@@ -31,6 +36,17 @@ case class State private(
   }
 
   def updatePlatform(): State = {
+    /*
+    val updatedPlatform = activeMissiles.foldLeft(platform) { (platform, missile) =>
+      val (x, y) = missile
+      if (platform.getChar(x, y) != CharBuffer.EmptyChar) {
+        //platform.putChar(x, y, CharBuffer.EmptyChar)
+        platform
+      } else {
+        platform
+      }
+    }
+    */
     if (obstacleDelay > 0)
       copy(platform = platform.scrollLeft(), obstacleDelay = obstacleDelay - 1)
     else if (obstacle.isEmpty)
@@ -41,7 +57,7 @@ case class State private(
 
   def updatePlayer(): State = {
     terminal.synchronized {
-      copy(player = terminal.readInput() match {
+      val updatedPlayer = terminal.readInput() match {
         case null => player
         case key  => key.getKind match {
           case Key.Kind.ArrowUp     => player.moveUp()
@@ -53,12 +69,37 @@ case class State private(
             case 's' | 'j'          => player.moveDown()
             case 'a' | 'h'          => player.moveLeft()
             case 'd' | 'l'          => player.moveRight()
+            case ' ' | 'm'          => player.fireMissile()
             case _                  => player
           }
           case _                    => player
         }
-      })
+      }
+      val updatedActiveMissiles = if (player.numMissiles > updatedPlayer.numMissiles) {
+        activeMissiles :+ (player.x + 1 -> player.y)
+      } else {
+        activeMissiles
+      }
+      copy(player = updatedPlayer, activeMissiles = updatedActiveMissiles)
     }
+  }
+
+  def updateActiveMissiles(): State = {
+    val updatedActiveMissiles = activeMissiles.flatMap { case (x, y) =>
+      // out of game bounds
+      if (x < originX || y < originY || x >= originX + width || y >= originY + height) {
+        None
+      }
+      // hit obstacle, clear the coordinate
+      else if (platform.getChar(x - originX, y - originY) != CharBuffer.EmptyChar) {
+        Some((x + 1, y))
+      }
+      // continue rendering
+      else {
+        Some((x + 1, y))
+      }
+    }
+    copy(activeMissiles = updatedActiveMissiles)
   }
 
   def updateScore(level: Game.Level): State = {
@@ -89,6 +130,28 @@ case class State private(
     renderToken(player.x, player.y, player.token)
   }
 
+  def renderActiveMissiles() {
+    activeMissiles.foreach { case (x, y) =>
+      renderToken(x, y, "*")
+    }
+  }
+
+  def renderInactiveMissiles() {
+    def draw(m: Int, n: Int, char: Char = ' ') {
+      terminal.moveCursor(originX + width - (m * 2), originY + height + Game.BorderSize)
+      (1 to n).foreach { _ =>
+        terminal.putCharacter(' ')
+        terminal.putCharacter(char)
+      }
+    }
+    val playerMissiles = math.min(maxMissiles, player.numMissiles)
+    terminal.synchronized {
+      draw(maxMissiles, maxMissiles, ' ')
+      draw(maxMissiles, playerMissiles, '*')
+      terminal.moveCursor(0, 0)
+    }
+  }
+
   def hidePlayer() {
     renderToken(player.x, player.y, player.token.map(_ => CharBuffer.EmptyChar).mkString)
   }
@@ -113,14 +176,15 @@ case class State private(
 
 object State {
 
-  def init(terminal: Terminal, width: Int, height: Int, originX: Int, originY: Int): State = {
+  def init(terminal: Terminal, width: Int, height: Int, originX: Int, originY: Int, numMissiles: Int): State = {
     val left = originX - (width / 2)
     val top = originY - (height / 2)
     val origin = (left, top)
-    val player = Player(left + (width / 4), top + (height / 4))
+    val player = Player(left + (width / 4), top + (height / 4), numMissiles)
+    val activeMissiles = Seq.empty[(Int, Int)]
     val score = 0L
     val platform = CharBuffer.empty(width, height)
     val obstacle = Obstacle(height).buffer
-    State(terminal, width, height, origin, player, score, platform, obstacle, obstacleDelay = 0)
+    State(terminal, width, height, origin, player, numMissiles, activeMissiles, score, platform, obstacle, obstacleDelay = 0)
   }
 }

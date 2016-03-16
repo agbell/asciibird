@@ -46,6 +46,7 @@ class Game(width: Int, height: Int, difficulty: Game.Level) {
     def render() {
       state.synchronized {
         state.renderPlayer()
+        state.renderInactiveMissiles()
         state.renderScore()
       }
     }
@@ -55,6 +56,7 @@ class Game(width: Int, height: Int, difficulty: Game.Level) {
     def update() {
       state.synchronized {
         state = state.updatePlatform
+        state = state.updateActiveMissiles
         if (!state.isValid) stop()
       }
     }
@@ -63,6 +65,7 @@ class Game(width: Int, height: Int, difficulty: Game.Level) {
       state.synchronized {
         state.renderPlatform()
         state.renderPlayer()
+        state.renderActiveMissiles()
       }
     }
   }
@@ -91,9 +94,14 @@ class Game(width: Int, height: Int, difficulty: Game.Level) {
 
   def start() {
     logger.debug("Starting")
+    val numMissiles = difficulty match {
+      case Game.Levels.Easy       => 4
+      case Game.Levels.Normal     => 3
+      case Game.Levels.Difficult  => 1
+    }
     terminal.synchronized {
       terminal.clearScreen()
-      state = State.init(terminal, width, height, originX, originY)
+      state = State.init(terminal, width, height, originX, originY, numMissiles)
     }
     isOver.compareAndSet(true, false)
     futures(0) = executor.submit(playerLoop)
