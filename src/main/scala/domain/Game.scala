@@ -159,7 +159,11 @@ class Game(width: Int, height: Int, difficulty: Game.Level) {
 object Game {
 
   def apply(width: Int = MinWidth, height: Int = MinHeight, difficulty: Level = Levels.Normal): Game = {
-    new Game(math.max(width, MinWidth), math.max(height, MinHeight), difficulty)
+    new Game(
+      width = math.max(MinWidth, math.min(width, MaxWidth)),
+      height = math.max(MinHeight, math.min(height, MaxHeight)),
+      difficulty = difficulty
+    )
   }
 
   val MinWidth = 28
