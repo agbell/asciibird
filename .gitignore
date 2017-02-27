@@ -1,3 +1,4 @@
-target
-*/asciibird.jar
+target/
+bin/sbt
+bin/asciibird.jar
 *.log
