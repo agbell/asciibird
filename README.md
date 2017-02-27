@@ -29,7 +29,7 @@ Navigation with `wasd` and `hjkl` is also supported.
     $ git clone git@github.com:jeffreyolchovy/asciibird.git
     $ cd asciibird
     $ make
-    
+
 After building, issue the following command to start a new game:
-    
+
     $ bin/asciibird
