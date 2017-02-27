@@ -1,13 +1,21 @@
 import domain.Game
 
-import scala.util.Try
+import util.Args
 
 object AsciiBird {
 
-  def main(args: Array[String]) {
-    val difficulty = Try(args(0).toInt).map(Game.Levels.valueOf).getOrElse(Game.Levels.Normal)
-    val width = Try(args(1).toInt).getOrElse(Game.MinWidth)
-    val height = Try(args(2).toInt).getOrElse(Game.MinHeight)
+  def main(rawArgs: Array[String]) {
+    val args = Args(rawArgs)
+    val width = args.optional("width")
+      .map(_.toInt)
+      .getOrElse(Game.MinWidth)
+    val height = args.optional("height")
+      .map(_.toInt)
+      .getOrElse(Game.MinHeight)
+    val difficulty = args.optional("difficulty")
+      .map(_.toInt)
+      .map(Game.Levels.valueOf)
+      .getOrElse(Game.Levels.Normal)
     val game = Game(width, height, difficulty)
     sys.addShutdownHook {
       game.shutdown()
