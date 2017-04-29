@@ -2,21 +2,7 @@
 
 A platformer for the Unix terminal, inspired by Flappy Bird.
 
-    ----------------------------
-       ::::      ::::  ::::     
-       ::::      ::::  ====     
-       ::::      ::::           
-       ::::      ::::           
-       ::::      ::::           
-       ====      ::::  ====     
-                 ::::  ::::     
-                 ::::  ::::     
-       ====      ====  ::::     
-       ::::            ::::     
-       ::::   @>       ::::     
-       ::::      ====  ::::     
-    ----------------------------
-    Score: 237
+![asciibird asciicast gif](https://github.com/jeffreyolchovy/asciibird/raw/master/asciicast.gif)
 
 ## Gameplay instructions
 
@@ -32,4 +18,24 @@ Navigation with `wasd` and `hjkl` is also supported.
 
 After building, issue the following command to start a new game:
 
-    $ bin/asciibird
+```
+$ bin/asciibird
+```
+
+## Static preview of gameplay
+
+    ----------------------------
+       ::::      ::::  ::::     
+       ::::      ::::  ====     
+       ::::      ::::           
+       ::::      ::::           
+       ::::      ::::           
+       ====      ::::  ====     
+                 ::::  ::::     
+                 ::::  ::::     
+       ====      ====  ::::     
+       ::::            ::::     
+       ::::   @>       ::::     
+       ::::      ====  ::::     
+    ----------------------------
+    Score: 237
